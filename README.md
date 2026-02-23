@@ -1,102 +1,67 @@
 ## Design and Implementation of LangChain Expression Language (LCEL) Expressions
 
-### Name: Kathiresan K
-### Register no: 212223110021
 
-### AIM:
-To design and implement a LangChain Expression Language (LCEL) expression that utilizes at least two prompt parameters and three key components (prompt, model, and output parser), and to evaluate its functionality by analyzing relevant examples of its application in real-world scenarios.
+## AIM:  
+To design and implement a LangChain Expression Language (LCEL) expression that utilizes at least two prompt parameters and three key components (prompt, model, and output parser), and to evaluate its functionality by analyzing relevant examples of its application in real-world scenarios.  
 
-### PROBLEM STATEMENT:
-LangChain Expression Language (LCEL) simplifies interactions with large language models (LLMs) by creating reusable and structured expressions. This task involves:
-1. Designing an LCEL expression with dynamic prompt parameters (e.g., topic and length).
-2. Using three essential components: Prompt- A structured input with placeholders for parameters, Model- An LLM used to process the prompt and Output Parser- A parser to interpret the model's output.
-3. Demonstrating the LCEL expression's functionality in generating structured, relevant outputs.
-   
-### DESIGN STEPS:
-1. **Define a Structured Output Model**  
-   Create a Pydantic model (`SummaryResponse`) to enforce strict formatting and define expected fields.  
-   Attach a `PydanticOutputParser` to validate the model schema.
 
-2. **Build a Prompt Template**
-   Use `ChatPromptTemplate` to create a parameterized prompt including tone, audience, length, and topic.  
-   Insert escaped format instructions to force valid JSON output.
+## PROBLEM STATEMENT:  
+Develop an LCEL-based application to process expressions with dynamic parameters, leveraging a prompt template for structured interaction, a language model to process the input, and an output parser for extracting meaningful results.
 
-3. **Configure the LLM**
-   Initialize the `ChatGroq` model, selecting model type and generation settings (temperature, API key).
 
-4. **Construct and Execute the LCEL Chain**
-   Pipe the prompt → model → parser using `|`, then run `.invoke()` on example inputs and inspect validated JSON output.
+## DESIGN STEPS:  
+1. **STEP 1:** Create a prompt template with placeholders for at least two parameters.  
+2. **STEP 2:** Use LangChain's language model to process the prompt and generate a response.  
+3. **STEP 3:** Implement an output parser to extract structured results from the model's response.
 
-### PROGRAM:
-```py
-# INSTALLS:
-# pip install -U langchain-core langchain-groq pydantic python-dotenv
 
-from pydantic import BaseModel, Field
-from langchain_core.prompts import ChatPromptTemplate
-from langchain_core.output_parsers import PydanticOutputParser
-from langchain_groq import ChatGroq
-import os
+## PROGRAM:  
 
-os.environ["GROQ_API_KEY"] = "groq_api"
+```python
+from langchain.prompts import PromptTemplate
+from langchain.llms import OpenAI
+from langchain.output_parsers import StructuredOutputParser, ResponseSchema
 
-# 1. STRUCTURED MODEL
-class SummaryResponse(BaseModel):
-    summary: str
-    word_count: int
-    highlights: list[str]
-
-parser = PydanticOutputParser(pydantic_object=SummaryResponse)
-
-# ESCAPE THE FORMAT INSTRUCTIONS
-format_rules = parser.get_format_instructions().replace("{", "{{").replace("}", "}}")
-
-# 2. PROMPT
-prompt = ChatPromptTemplate.from_messages(
-    [
-        ("system", "You are a concise factual summarizer."),
-        ("human",
-         "Write a {length}-word {tone} summary about: {topic}.\n"
-         "Provide exactly 3 short highlights.\n\n"
-         "Output MUST be valid JSON using this schema:\n"
-         f"{format_rules}\n\n"
-         "Audience: {audience}"
-        ),
-    ]
+# Define the prompt template with two parameters
+prompt = PromptTemplate(
+    input_variables=["topic", "context"],
+    template="Write a summary about {topic} based on the following context: {context}"
 )
 
+# Initialize the language model
+llm = OpenAI(model="text-davinci-003", temperature=0.7)
 
-# 3. MODEL (GROQ)
-llm = ChatGroq(
-    model="openai/gpt-oss-20b",
-    temperature=0
-)
-
-# 4. LCEL CHAIN
-chain = prompt | llm | parser
-
-# 5. TEST EXAMPLES
-examples = [
-    {"topic": "Climate change causes", "length": "50", "tone": "neutral", "audience": "general readers"},
-    {"topic": "Transformer neural networks", "length": "40", "tone": "technical", "audience": "ML engineers"},
+# Define the response schema for the output parser
+response_schemas = [
+    ResponseSchema(name="summary", description="A concise summary of the topic"),
+    ResponseSchema(name="key_points", description="Main points covered in the summary")
 ]
 
-for ex in examples:
-    print("\n=== INPUT ===")
-    print(ex)
+output_parser = StructuredOutputParser.from_response_schemas(response_schemas)
 
-    result = chain.invoke(ex)
-    print("\n=== PARSED JSON OUTPUT ===")
-    print(result.model_dump())
+# Example function to evaluate the LCEL expression
+def evaluate_expression(topic, context):
+    # Generate the prompt with input parameters
+    formatted_prompt = prompt.format(topic=topic, context=context)
+    
+    # Get the response from the LLM
+    raw_output = llm(formatted_prompt)
+    
+    # Parse the output into a structured format
+    parsed_output = output_parser.parse(raw_output)
+    
+    return parsed_output
 
-    real_wc = len(result.summary.split())
-    print("Reported:", result.word_count)
-    print("Actual:", real_wc)
+# Example usage
+if __name__ == "__main__":
+    topic = "Artificial Intelligence"
+    context = "Artificial Intelligence is a field of study focusing on creating machines capable of mimicking human intelligence. It includes machine learning, robotics, and natural language processing."
+    result = evaluate_expression(topic, context)
+    print("LCEL Expression Output:")
+    print(result)
 ```
-### OUTPUT:
+## OUTPUT:
+![image](https://github.com/user-attachments/assets/444ceaf6-aa2d-42b4-bf27-42162d8b51fc)
 
-![alt Image](https://github.com/user-attachments/assets/7811609e-857a-4330-9628-1fde46d6fe7d)
-
-### RESULT:
-
-Thus, the LangChain Expression Language (LCEL) expression that utilizes two prompt parameters and three key components (prompt, model, and output parser) was designed and implemented successfully. And also evaluated its functionality by analyzing relevant examples of its application in real-world scenarios.
+## RESULT:
+Hence,the program to design and implement a LangChain Expression Language (LCEL) expression that utilizes at least two prompt parameters and three key components (prompt, model, and output parser), and to evaluate its functionality by analyzing relevant examples of its application in real-world scenarios is written and successfully executed.
